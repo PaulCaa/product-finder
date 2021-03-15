@@ -39,13 +39,8 @@ public class RestConnector {
 
     private Object execute(String u, List<String> params) {
         try {
-            URL url = new URL(u);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setUseCaches(false);
-            conn.setRequestProperty("Content-Type","application/json");
-            conn.setRequestProperty("Accept", "*/*");
             if(params != null && !params.isEmpty()) {
+                u += "?";
                 int cant = params.size();
                 String key = "";
                 String value = "";
@@ -53,11 +48,18 @@ public class RestConnector {
                     key = params.get(i);
                     i++;
                     value = params.get(i);
-                    i++;
-                    conn.setRequestProperty(key,value);
+                    if (i > 2) {
+                        u += "&";
+                    }
+                    u += key + "=" +value;
                 }
-
             }
+            URL url = new URL(u);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setUseCaches(false);
+            conn.setRequestProperty("Content-Type","application/json");
+            conn.setRequestProperty("Accept", "*/*");
             //System.out.println("calling: " + url.getHost() + url.getPath());
             conn.connect();
             BufferedInputStream bs;
