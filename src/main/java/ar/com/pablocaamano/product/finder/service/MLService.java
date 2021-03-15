@@ -98,7 +98,10 @@ public class MLService {
     private void countBrandsAndPrices(Product p) {
         String brand = p.getBrand();
         Float price = Float.valueOf(p.getPrice());
-        brand.toUpperCase();
+        if(p.getCurrency().equalsIgnoreCase("USD")) {
+            brand += " [USD]";
+        }
+        brand = brand.toUpperCase();
         if(this.brandCounts.containsKey(brand) && this.brandAmounts.containsKey(brand)){
             Integer cant = this.brandCounts.get(brand);
             cant++;
