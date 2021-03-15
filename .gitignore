@@ -1,4 +1,12 @@
-target/
+.idea
+.idea/**
+.project
+.project/**
+.classpath
+.classpath/**
+*.iml
+target
+target/**
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
