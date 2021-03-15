@@ -58,7 +58,7 @@ public class RestConnector {
                 }
 
             }
-            System.out.println("calling: " + url.getHost() + url.getPath());
+            //System.out.println("calling: " + url.getHost() + url.getPath());
             conn.connect();
             BufferedInputStream bs;
             this.statusCode = conn.getResponseCode();
@@ -68,7 +68,7 @@ public class RestConnector {
             } else {
                 bs = new BufferedInputStream(conn.getInputStream());
             }
-            System.out.println("mapeando respuesta...");
+            //System.out.println("mapeando respuesta...");
             ObjectMapper mapper = new ObjectMapper();
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             byte[] buff = new byte[8192];

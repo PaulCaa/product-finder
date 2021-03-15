@@ -6,14 +6,20 @@ import ar.com.pablocaamano.product.finder.utils.Constants;
 import ar.com.pablocaamano.product.finder.utils.Mapper;
 import ar.com.pablocaamano.product.finder.utils.RestConnector;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Pablo Caamaño
  */
 public class MLService {
+
+    private Map<String, Integer> brandCounts;
+    private Map<String,Float> brandAmounts;
+
+    public MLService() {
+        this.brandCounts = new HashMap<>();
+        this.brandAmounts = new HashMap<>();
+    }
 
     /**
      * Obtener ID de categoría en MercadoLibre
@@ -47,26 +53,90 @@ public class MLService {
         return category;
     }
 
+    /**
+     * Se obtiene lista de los productos por categoria
+     * @param idCategory String
+     * @return List<Product>
+     */
     public List<Product> listProduct(String idCategory) {
         int countPag = 0;
         int totalPag  = 0;
         List<Product> prodList = new ArrayList<>();
-        System.out.println("Listando productos en categoria " + idCategory);
         RestConnector conn = RestConnector.getInstance();
-        while(countPag <= totalPag && countPag <= 10) {
+        while(countPag <= totalPag && countPag <= Constants.MAX_PAGE_CANT) {
+            System.out.println("Listando productos en categoria " + idCategory + ", pagina: " + countPag);
             List<String> params = new ArrayList<>();
             params.add("offset");
             params.add(String.valueOf(countPag));
-            Map<String, Object> resp = (Map<String, Object>) conn.get(Constants.ML_ITEMS + idCategory, params);
-            Map<String,Integer> pag = (Map<String, Integer>) resp.get("paging");
-            totalPag = pag.get("total");
-            countPag++;
-            List<Map<String,Object>> products = (List<Map<String, Object>>) resp.get("results");
-            for(Map<String,Object> p : products) {
-                prodList.add(Mapper.toProduct(p));
+            try {
+                Map<String, Object> resp = (Map<String, Object>) conn.get(Constants.ML_ITEMS + idCategory, params);
+                Map<String, Integer> pag = (Map<String, Integer>) resp.get("paging");
+                totalPag = pag.get("total");
+                List<Map<String, Object>> products = (List<Map<String, Object>>) resp.get("results");
+                for (Map<String, Object> p : products) {
+                    Product prod = Mapper.toProduct(p);
+                    // SE VALIDA QUE LA MOTO SEA NUEVA
+                    if (prod.getCondition().equalsIgnoreCase("new")) {
+                        countBrandsAndPrices(prod);
+                        prodList.add(Mapper.toProduct(p));
+                    }
+                }
+            } catch(Exception exception){
+                System.out.println("Error al consultar los productos de la categoria: " + idCategory + "y la pagina: " + countPag);
+                System.out.println(exception.getMessage());
             }
+            countPag++;
         }
-        System.out.println("Se listaron" + prodList.size() + " productos");
+        System.out.println("Se listaron " + prodList.size() + " productos");
         return prodList;
+    }
+
+    /**
+     * Se cuentan los registros por marcas y se acumula el precio
+     * @param p Product
+     */
+    private void countBrandsAndPrices(Product p) {
+        String brand = p.getBrand();
+        Float price = Float.valueOf(p.getPrice());
+        brand.toUpperCase();
+        if(this.brandCounts.containsKey(brand) && this.brandAmounts.containsKey(brand)){
+            Integer cant = this.brandCounts.get(brand);
+            cant++;
+            this.brandCounts.replace(brand,cant);
+            Float amount = this.brandAmounts.get(brand);
+            amount += price;
+            this.brandAmounts.replace(brand,amount);
+        } else {
+            this.brandCounts.put(brand,1);
+            this.brandAmounts.put(brand,price);
+        }
+    }
+
+    /**
+     * Se imprimen en consola precios promedios por marca
+     */
+    public void showStatistics() {
+        System.out.println("\n\n|***********************************************|\n|***************** RESULTADOS ******************|");
+        System.out.println("|\t\tMARCA\t\t|\t\tPRECIO PROMEDIO\t\t|");
+        for(String key : this.brandCounts.keySet()){
+            Integer cant = this.brandCounts.get(key);
+            Float totalPrice = this.brandAmounts.get(key);
+            System.out.println("|\t\t" + key +  "\t\t->\t\t$ " + totalPrice/cant);
+        }
+    }
+
+    /**
+     * Se calculan promedios por marca
+     * @return Map<String, Float> => key = brand ; value = average price
+     */
+    public Map<String, Float> getStatistics() {
+        Map<String, Float> avgs = new HashMap<>();
+        for(String key : this.brandCounts.keySet()){
+            Integer cant = this.brandCounts.get(key);
+            Float totalPrice = this.brandAmounts.get(key);
+            Float avg = totalPrice / cant;
+            avgs.put(key,avg);
+        }
+        return avgs;
     }
 }
