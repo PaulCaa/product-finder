@@ -59,20 +59,23 @@ public class MLService {
      * @return List<Product>
      */
     public List<Product> listProduct(String idCategory) {
-        int countPag = 0;
-        int totalPag  = 0;
+        int countItems = 0;
+        int totalItems  = 0;
         List<Product> prodList = new ArrayList<>();
         RestConnector conn = RestConnector.getInstance();
-        while(countPag <= totalPag && countPag <= Constants.MAX_PAGE_CANT) {
-            System.out.println("Listando productos en categoria " + idCategory + ", pagina: " + countPag);
-            List<String> params = new ArrayList<>();
-            params.add("offset");
-            params.add(String.valueOf(countPag));
+        List<String> params = new ArrayList<>();
+        params.add("category");
+        params.add(idCategory);
+        params.add("offset");
+        params.add(String.valueOf(countItems));
+        while(countItems <= totalItems && countItems < Constants.MAX_PAGE_CANT) {
+            System.out.println("Listando productos desde " + countItems + " en categoria "+ idCategory);
             try {
-                Map<String, Object> resp = (Map<String, Object>) conn.get(Constants.ML_ITEMS + idCategory, params);
+                Map<String, Object> resp = (Map<String, Object>) conn.get(Constants.ML_ITEMS , params);
                 Map<String, Integer> pag = (Map<String, Integer>) resp.get("paging");
-                totalPag = pag.get("total");
+                totalItems = pag.get("total");
                 List<Map<String, Object>> products = (List<Map<String, Object>>) resp.get("results");
+                countItems += products.size();
                 for (Map<String, Object> p : products) {
                     Product prod = Mapper.toProduct(p);
                     // SE VALIDA QUE LA MOTO SEA NUEVA
@@ -82,10 +85,11 @@ public class MLService {
                     }
                 }
             } catch(Exception exception){
-                System.out.println("Error al consultar los productos de la categoria: " + idCategory + "y la pagina: " + countPag);
+                System.out.println("Error al consultar los productos de la categoria: " + idCategory + "y la pagina: " + countItems);
                 System.out.println(exception.getMessage());
             }
-            countPag++;
+            int paramIx = params.indexOf("offset");
+            params.set(++paramIx,String.valueOf(countItems));
         }
         System.out.println("Se listaron " + prodList.size() + " productos");
         return prodList;
